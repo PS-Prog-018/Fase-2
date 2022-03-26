@@ -1,0 +1,160 @@
+//Crossbots 2022 - PS - Programação Robô Sumô.
+#include <Ultrasonic.h>
+
+// Declarando Sensores Infravermelho:
+
+// Sensor Frente.
+int SensorF;
+// Sensor Atras
+int SensorA;
+
+// Declarando Ultrassom.
+// Ultrassom Esquerdo.
+int trigE;
+int echoE;
+Ultrasonic ultrassomE(trigE, echoE);
+
+// Ultrassom Direito.
+int trigD;
+int echoD;
+Ultrasonic ultrassomD(trigD, echoD);
+
+// Variaveis para Receber os valores.
+long Ultra_D, Ultra_E;
+
+// Declarando Motores.
+// Motor Direito.
+int MotorD1;
+int MotorD2;
+
+// Motor Esquerdo.
+int MotorE1;
+int MotorE2;
+
+// Variaveis de Controle.
+int ataque;
+int buscar;
+int escape;
+
+void setup() {
+  Serial.begin(9600);
+  // Motores Pinos de Saída.
+  // -----------------------
+  pinMode(MotorD1, OUTPUT);
+  pinMode(MotorD2, OUTPUT);
+  pinMode(MotorE1, OUTPUT);
+  pinMode(MotorE2, OUTPUT);
+  // -----------------------
+  // Sensores Infravermelho.
+  pinMode(SensorF, INPUT);
+  pinMode(SensorA, INPUT);
+}
+
+//Calibra e recebe os valores dos sensores infravermelho e ultrassom.
+void calibrate() {
+  SensorAtras = digitalRead(SensorA);
+  SensorFrente = digitalRead(SensorF);
+  Ultra_E = ultrassomE.Ranging(CM);
+  Ultra_D = ultrassomD.Ranging(CM);
+}
+
+// retorna a posicao do robo em relacao a pista
+double readLine() {
+  double position;
+
+  // Caso os 2 infravermelhos 0, estão na arena.
+  if (SensorFrente == 0 && SensorAtras == 0) {
+    position = 0.00;
+  }
+  // Caso SensorFrente 1 e SensorAtras 0 está sendo empurrado.
+  else if (SensorFrente == 1 && SensorAtras == 0) {
+    position = 1.00;
+  }
+  // Caso SensorFrente 0 e SensorAtras 1 está sendo empurrado.
+  else if (SensorFrente == 0 && SensorAtras == 1) {
+    position = 2.00;
+  }
+  // Retorna o resultado da poisicao.
+  return position;
+}
+
+// Funcao Retorna a posicao do adiversário.
+int detectEnemy() {
+  int adversario;
+
+  // Buscar Adversário.
+  if (Ultra_E > 77 && Ultra_D > 77) {
+    adversario = 0;
+  }
+
+  // Adversário a Esquerda.
+  else if (Ultra_E < 77 && Ultra_D > 77) {
+    adversario = 1;
+  }
+
+  // Adversário a Direita.
+  else if (Ultra_E > 77 && Ultra_D < 77) {
+    adversario = 2;
+  }
+
+  // Adversário encontrado.
+  else if (Ultra_E < 77 && Ultra_D < 77) {
+    adversario = 3;
+  }
+  // Retorna o resultado do adversario.
+  return adversario;
+}
+
+// Funcao Recebe valores por parametro, e devolve a rotacao dos motores.
+void motorRun(int E1, int E2, int vel, int D1, int D2, int vel) {
+  digitalWrite(MotorE1, E1);
+  digitalWrite(MotorE2, E2);
+  digitalWrite(velE, vel);
+  digitalWrite(MotorD1, D1);
+  digitalWrite(MotorD2, D2);
+  digitalWrite(velD, vel);
+}
+
+
+// int main
+void loop() {
+  // Atualizando dados dos sensores.
+  calibrate();
+
+  // Caso os 2 infravermelhos 0, estão na arena.
+  if (readLine() == 0.00) {
+
+    // Atualizando dados dos sensores;
+    calibrate();
+
+    // Buscar Adversário:
+    if (detectEnemy() == 0.00) {
+      motorRun(0, 1, buscar, 1, 0, buscar); // movimento para Direita.
+    }
+
+    // Adversário a Esquerda
+    else if (detectEnemy() == 1.00) {
+      motorRun(1, 0, buscar, 0, 1, buscar); // movimento para Esquerda.
+    }
+
+    // Adversário a Direita
+    else if (detectEnemy() ==  2.00) {
+      motorRun(0, 1, buscar, 1, 0, buscar); // movimento para Direita.
+    }
+
+    // Adversário encontrado
+    else if (detectEnemy() == 3.00) {
+      motorRun(1, 0, ataque, 1, 0, ataque); // movimento ataque.
+    }
+  }
+
+  // Caso SensorFrente 1 e SensorAtras 0 está sendo empurrado.
+  else if (readLine() == 1) {
+    motorRun(0, 1, escape, 0, 1, escape); // movimento ré.
+  }
+
+  // Caso SensorFrente 0 e SensorAtras 1 está sendo empurrado.
+  else if (readLine() == 2) {
+    motorRun(1, 0, escape, 1, 0, escape); // movimento para Frente:
+  }
+}
